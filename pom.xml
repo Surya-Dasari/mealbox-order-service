@@ -66,6 +66,18 @@
             </plugin>
 
         </plugins>
-    </build>
+</build>
+<distributionManagement>
+    <repository>
+        <id>mealbox-nexus-releases</id>
+        <url>http://localhost:8082/repository/mealbox-maven-releases/</url>
+    </repository>
+
+    <snapshotRepository>
+        <id>mealbox-nexus-snapshots</id>
+        <url>http://localhost:8082/repository/mealbox-maven-snapshots/</url>
+    </snapshotRepository>
+</distributionManagement>
+
 
 </project>
