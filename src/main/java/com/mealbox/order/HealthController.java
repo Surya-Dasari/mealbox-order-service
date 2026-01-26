@@ -1,4 +1,4 @@
-package com.mealbox.orderservice;
+package com.mealbox.order;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HealthController {
 
-    @GetMapping("/health")
+    @GetMapping("/order/health")
     public String health() {
-        return "order-service is UP";
+        return "Order Service is UP";
     }
 }

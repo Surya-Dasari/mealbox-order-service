@@ -1,2 +1,2 @@
-com/mealbox/orderservice/HealthController.class
-com/mealbox/orderservice/Application.class
+com/mealbox/order/OrderServiceApplication.class
+com/mealbox/order/HealthController.class
