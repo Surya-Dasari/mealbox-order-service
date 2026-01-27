@@ -51,7 +51,7 @@ pipeline {
     stage('Publish SNAPSHOT') {
       steps {
         sh '''
-          source vault.env
+          . vault.env
 
           NEXUS_USER=$(curl -s -H "X-Vault-Token:$VAULT_TOKEN" \
             $VAULT_ADDR/v1/secret/data/mealbox/ci | jq -r .data.data.nexus_username)
