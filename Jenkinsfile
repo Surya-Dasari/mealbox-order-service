@@ -60,13 +60,25 @@ stage('Publish SNAPSHOT') {
           --data '{"role_id":"'"$ROLE_ID"'","secret_id":"'"$SECRET_ID"'"}' \
           http://127.0.0.1:8200/v1/auth/approle/login | jq -r .auth.client_token)
 
-        export NEXUS_USER=$(curl -s -H "X-Vault-Token:$VAULT_TOKEN" \
+        NEXUS_USER=$(curl -s -H "X-Vault-Token:$VAULT_TOKEN" \
           http://127.0.0.1:8200/v1/secret/data/mealbox/ci | jq -r .data.data.nexus_username)
 
-        export NEXUS_PASS=$(curl -s -H "X-Vault-Token:$VAULT_TOKEN" \
+        NEXUS_PASS=$(curl -s -H "X-Vault-Token:$VAULT_TOKEN" \
           http://127.0.0.1:8200/v1/secret/data/mealbox/ci | jq -r .data.data.nexus_password)
 
-        mvn deploy -DskipTests
+        cat <<EOF > settings.xml
+<settings>
+  <servers>
+    <server>
+      <id>mealbox-maven-snapshots</id>
+      <username>${NEXUS_USER}</username>
+      <password>${NEXUS_PASS}</password>
+    </server>
+  </servers>
+</settings>
+EOF
+
+        mvn deploy -DskipTests --settings settings.xml
       '''
     }
   }
