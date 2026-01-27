@@ -1,26 +1,26 @@
-pipeline {
-  agent any
+withVault([
+  vaultSecrets: [[
+    path: 'secret/mealbox/ci',
+    secretValues: [
+      [envVar: 'NEXUS_USER', vaultKey: 'nexus_username'],
+      [envVar: 'NEXUS_PASS', vaultKey: 'nexus_password']
+    ]
+  ]]
+]) {
+  sh '''
+cat > settings.xml <<EOF
+<settings>
+  <servers>
+    <server>
+      <id>mealbox-maven-snapshots</id>
+      <username>${NEXUS_USER}</username>
+      <password>${NEXUS_PASS}</password>
+    </server>
+  </servers>
+</settings>
+EOF
 
-  stages {
-    stage('Vault Smoke Test') {
-      steps {
-        withVault([
-          vaultSecrets: [[
-            path: 'secret/mealbox/ci',
-            secretValues: [
-              [envVar: 'NEXUS_USER', vaultKey: 'nexus_username'],
-              [envVar: 'NEXUS_PASS', vaultKey: 'nexus_password']
-            ]
-          ]]
-        ]) {
-          sh '''
-            echo "Vault injection working"
-            test -n "$NEXUS_USER"
-            test -n "$NEXUS_PASS"
-          '''
-        }
-      }
-    }
-  }
+mvn deploy -DskipTests -s settings.xml
+'''
 }
 
