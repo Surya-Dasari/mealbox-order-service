@@ -23,21 +23,21 @@ pipeline {
             }
         }
 
-        stage('Publish SNAPSHOT to Nexus') {
-            when {
-                branch 'develop'
-            }
-            steps {
-                withVault([
-                    vaultSecrets: [[
-                        path: 'secret/mealbox/ci',
-                        secretValues: [
-                            [envVar: 'NEXUS_USER', vaultKey: 'nexus_username'],
-                            [envVar: 'NEXUS_PASS', vaultKey: 'nexus_password']
-                        ]
-                    ]]
-                ]) {
-                }sh '''
+stage('Publish SNAPSHOT') {
+    when {
+        branch 'develop'
+    }
+    steps {
+        withVault([
+            vaultSecrets: [[
+                path: 'secret/mealbox/ci',
+                secretValues: [
+                    [envVar: 'NEXUS_USER', vaultKey: 'nexus_username'],
+                    [envVar: 'NEXUS_PASS', vaultKey: 'nexus_password']
+                ]
+            ]]
+        ]) {
+            sh '''
 cat > settings.xml <<EOF
 <settings>
   <servers>
@@ -57,9 +57,9 @@ EOF
 
 mvn deploy -DskipTests -s settings.xml
 '''
-
-            }
         }
+    }
+}
 
         stage('Docker Build') {
             when {
