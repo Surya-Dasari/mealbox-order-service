@@ -37,12 +37,17 @@ pipeline {
                         ]
                     ]]
                 ]) {
-                    sh '''
+                }sh '''
 cat > settings.xml <<EOF
 <settings>
   <servers>
     <server>
-      <id>mealbox-maven-snapshots</id>
+      <id>mealbox-nexus-snapshots</id>
+      <username>${NEXUS_USER}</username>
+      <password>${NEXUS_PASS}</password>
+    </server>
+    <server>
+      <id>mealbox-nexus-releases</id>
       <username>${NEXUS_USER}</username>
       <password>${NEXUS_PASS}</password>
     </server>
@@ -52,7 +57,7 @@ EOF
 
 mvn deploy -DskipTests -s settings.xml
 '''
-                }
+
             }
         }
 
