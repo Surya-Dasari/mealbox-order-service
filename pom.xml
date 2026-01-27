@@ -70,12 +70,12 @@
 <distributionManagement>
     <repository>
         <id>mealbox-nexus-releases</id>
-        <url>http://localhost:8082/repository/mealbox-maven-releases/</url>
+        <url>http://host.docker.internal:8082/mealbox-maven-releases/</url>
     </repository>
 
     <snapshotRepository>
         <id>mealbox-nexus-snapshots</id>
-        <url>http://localhost:8082/repository/mealbox-maven-snapshots/</url>
+        <url>http://host.docker.internal:8082/repository/mealbox-maven-snapshots/</url>
     </snapshotRepository>
 </distributionManagement>
 
