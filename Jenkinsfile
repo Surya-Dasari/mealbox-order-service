@@ -15,7 +15,6 @@ pipeline {
         ]) {
           sh '''
             echo "Vault injection working"
-            echo "NEXUS_USER is set"
             test -n "$NEXUS_USER"
             test -n "$NEXUS_PASS"
           '''
