@@ -70,7 +70,7 @@ mvn deploy -DskipTests -s settings.xml
                     ]]
                 ]) {
                     sh '''
-docker build \
+docker build --no-cache \
   -f docker/Dockerfile \
   --build-arg NEXUS_URL=${NEXUS_URL} \
   --build-arg NEXUS_REPO=${NEXUS_REPO} \
