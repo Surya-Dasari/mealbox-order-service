@@ -130,10 +130,10 @@ set -e
 /usr/bin/oc project $(/usr/bin/oc projects -q | head -1)
 
 sed "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g" \
-  platform/openshift/order-service/deployment.yaml | /usr/bin/oc apply -f -
+  platform/openshift/deployment.yaml | /usr/bin/oc apply -f -
 
-/usr/bin/oc apply -f platform/openshift/order-service/service.yaml
-/usr/bin/oc apply -f platform/openshift/order-service/route.yaml
+/usr/bin/oc apply -f platform/openshift/service.yaml
+/usr/bin/oc apply -f platform/openshift/route.yaml
 '''
                 }
             }
