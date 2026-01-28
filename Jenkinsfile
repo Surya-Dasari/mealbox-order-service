@@ -3,8 +3,12 @@ pipeline {
 
     environment {
         IMAGE_NAME = "suryadasari31/mealbox-order-service"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+
         NEXUS_URL  = "http://172.25.224.1:8082"
         NEXUS_REPO = "mealbox-maven-snapshots"
+
+        OC_API     = "https://api.sandbox-m2.ll9k.p1.openshiftapps.com"
     }
 
     stages {
@@ -15,7 +19,7 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
+        stage('Build & Unit Test') {
             steps {
                 sh 'mvn clean test package'
             }
@@ -52,7 +56,7 @@ mvn deploy -DskipTests -s settings.xml
             }
         }
 
-        stage('Docker Build') {
+        stage('Docker Build (from Nexus)') {
             when { branch 'develop' }
             steps {
                 withVault([
@@ -71,7 +75,7 @@ docker build \
   --build-arg NEXUS_REPO=${NEXUS_REPO} \
   --build-arg NEXUS_USER=${NEXUS_USER} \
   --build-arg NEXUS_PASS=${NEXUS_PASS} \
-  -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+  -t ${IMAGE_NAME}:${IMAGE_TAG} .
 '''
                 }
             }
@@ -84,7 +88,7 @@ docker build \
 trivy image \
   --severity HIGH,CRITICAL \
   --exit-code 0 \
-  ${IMAGE_NAME}:${BUILD_NUMBER}
+  ${IMAGE_NAME}:${IMAGE_TAG}
 '''
             }
         }
@@ -104,8 +108,35 @@ trivy image \
                     sh '''
 set -e
 echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-docker push ${IMAGE_NAME}:${BUILD_NUMBER}
-echo "Docker push completed"
+docker push ${IMAGE_NAME}:${IMAGE_TAG}
+'''
+                }
+            }
+        }
+
+        stage('Deploy to OpenShift Sandbox') {
+            when { branch 'develop' }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')
+                ]) {
+                    sh '''
+set -e
+
+# Login to OpenShift
+oc login ${OC_API} \
+  --token=${OC_TOKEN} \
+  --insecure-skip-tls-verify=true
+
+# Sandbox allows only existing project
+oc project $(oc projects -q | head -1)
+
+# Inject image dynamically and deploy
+sed "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g" \
+  platform/openshift/order-service/deployment.yaml | oc apply -f -
+
+oc apply -f platform/openshift/order-service/service.yaml
+oc apply -f platform/openshift/order-service/route.yaml
 '''
                 }
             }
@@ -113,14 +144,14 @@ echo "Docker push completed"
     }
 
     post {
-        always {
-            cleanWs()
-        }
         success {
-            echo "CI pipeline SUCCESS with security scan"
+            echo "MealBox Order Service: CI + Deploy SUCCESS"
         }
         failure {
-            echo "CI pipeline FAILED"
+            echo "MealBox Order Service: CI or Deploy FAILED"
+        }
+        always {
+            cleanWs()
         }
     }
 }
