@@ -124,28 +124,26 @@ docker push ${IMAGE_NAME}:${IMAGE_TAG}
                     sh '''
 set -e
 
-/usr/bin/oc login ${OC_API} \
+oc login ${OC_API} \
   --token=${OC_TOKEN} \
   --insecure-skip-tls-verify=true
 
-/usr/bin/oc project ${OC_PROJECT}
+oc project ${OC_PROJECT}
 
 sed "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g" \
-  platform/openshift/deployment.yaml | /usr/bin/oc apply -f -
+  platform/openshift/deployment.yaml | oc apply -f -
 
-/usr/bin/oc apply -f platform/openshift/service.yaml
-/usr/bin/oc apply -f platform/openshift/route.yaml
-
+oc apply -f platform/openshift/service.yaml
+oc apply -f platform/openshift/route.yaml
 '''
                 }
             }
         }
-    }
 
-stage('Helm Template (Dry Run)') {
-    when { branch 'develop' }
-    steps {
-        sh '''
+        stage('Helm Template (Dry Run)') {
+            when { branch 'develop' }
+            steps {
+                sh '''
 set -e
 
 echo "Cloning MealBox platform repo (Helm charts)..."
@@ -157,14 +155,16 @@ helm template order-service \
   mealbox-platform/helm/mealbox-backend-service \
   -f mealbox-platform/helm/mealbox-backend-service/values/values-order-service.yaml
 '''
+            }
+        }
     }
-}
+
     post {
         success {
-            echo "MealBox Order Service: CI + Deploy SUCCESS"
+            echo "MealBox Order Service: Pipeline SUCCESS"
         }
         failure {
-            echo "MealBox Order Service: CI or Deploy FAILED"
+            echo "MealBox Order Service: Pipeline FAILED"
         }
         always {
             cleanWs()
