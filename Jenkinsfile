@@ -115,13 +115,13 @@ docker push ${IMAGE_NAME}:${IMAGE_TAG}
             }
         }
 
-       stage('Deploy to OpenShift (Helm)') {
-    when { branch 'develop' }
-    steps {
-        withCredentials([
-            string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')
-        ]) {
-            sh '''
+        stage('Deploy to OpenShift (Helm)') {
+            when { branch 'develop' }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')
+                ]) {
+                    sh '''
 set -e
 
 echo "Cloning MealBox platform repo (Helm charts)..."
@@ -144,10 +144,10 @@ echo "Deploying order-service using Helm..."
 
 echo "Helm deployment finished"
 '''
+                }
+            }
         }
     }
-}
-
 
     post {
         success {
