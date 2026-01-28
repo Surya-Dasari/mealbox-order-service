@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    environment {
+        SERVICE_NAME = "order-service"
+        IMAGE_NAME   = "mealbox/order-service"
+        MAVEN_OPTS   = "-Dmaven.test.skip=false"
+    }
+
     stages {
 
         stage('Checkout') {
@@ -9,13 +15,15 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
+        stage('Build & Unit Tests') {
             steps {
-                sh 'mvn clean test package'
+                sh '''
+                  mvn clean test package
+                '''
             }
         }
 
-        stage('Publish SNAPSHOT') {
+        stage('Publish SNAPSHOT to Nexus') {
             when {
                 branch 'develop'
             }
@@ -58,12 +66,22 @@ mvn deploy -DskipTests -s settings.xml
                 branch 'develop'
             }
             steps {
-                sh 'docker build -t mealbox/order-service:${BUILD_NUMBER} .'
+                sh '''
+docker build \
+  -f docker/Dockerfile \
+  -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+'''
             }
         }
     }
 
     post {
+        success {
+            echo "Order Service CI pipeline SUCCESS"
+        }
+        failure {
+            echo "Order Service CI pipeline FAILED"
+        }
         always {
             cleanWs()
         }
