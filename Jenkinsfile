@@ -152,4 +152,3 @@ sed "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g" \
         }
     }
 }
-
