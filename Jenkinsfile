@@ -2,39 +2,34 @@ pipeline {
     agent any
 
     environment {
-        SERVICE_NAME = "order-service"
-        IMAGE_NAME   = "suryadasari31/mealbox-order-service"
-        NEXUS_URL    = "http://172.25.224.1:8082"
-        NEXUS_REPO   = "mealbox-maven-snapshots"
+        IMAGE_NAME = "suryadasari31/mealbox-order-service"
+        NEXUS_URL  = "http://172.25.224.1:8082"
+        NEXUS_REPO = "mealbox-maven-snapshots"
     }
 
     stages {
 
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Build & Unit Test') {
+        stage('Build & Test') {
             steps {
-                sh '''
-                  mvn clean test package
-                '''
+                sh 'mvn clean test package'
             }
         }
 
         stage('Publish SNAPSHOT to Nexus') {
-            when {
-                branch 'develop'
-            }
+            when { branch 'develop' }
             steps {
                 withVault([
                     vaultSecrets: [[
                         path: 'secret/mealbox/ci',
                         secretValues: [
-                            [envVar: 'NEXUS_USER',  vaultKey: 'nexus_username'],
-                            [envVar: 'NEXUS_PASS',  vaultKey: 'nexus_password']
+                            [envVar: 'NEXUS_USER', vaultKey: 'nexus_username'],
+                            [envVar: 'NEXUS_PASS', vaultKey: 'nexus_password']
                         ]
                     ]]
                 ]) {
@@ -57,17 +52,15 @@ mvn deploy -DskipTests -s settings.xml
             }
         }
 
-        stage('Docker Build (from Nexus)') {
-            when {
-                branch 'develop'
-            }
+        stage('Docker Build') {
+            when { branch 'develop' }
             steps {
                 withVault([
                     vaultSecrets: [[
                         path: 'secret/mealbox/ci',
                         secretValues: [
-                            [envVar: 'NEXUS_USER',  vaultKey: 'nexus_username'],
-                            [envVar: 'NEXUS_PASS',  vaultKey: 'nexus_password']
+                            [envVar: 'NEXUS_USER', vaultKey: 'nexus_username'],
+                            [envVar: 'NEXUS_PASS', vaultKey: 'nexus_password']
                         ]
                     ]]
                 ]) {
@@ -84,10 +77,20 @@ docker build \
             }
         }
 
-        stage('Push Image to Docker Hub') {
-            when {
-                branch 'develop'
+        stage('Trivy Image Scan') {
+            when { branch 'develop' }
+            steps {
+                sh '''
+trivy image \
+  --severity HIGH,CRITICAL \
+  --exit-code 0 \
+  ${IMAGE_NAME}:${BUILD_NUMBER}
+'''
             }
+        }
+
+        stage('Push Image to Docker Hub') {
+            when { branch 'develop' }
             steps {
                 withVault([
                     vaultSecrets: [[
@@ -99,8 +102,10 @@ docker build \
                     ]]
                 ]) {
                     sh '''
+set -e
 echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+echo "Docker push completed"
 '''
                 }
             }
@@ -108,14 +113,14 @@ docker push ${IMAGE_NAME}:${BUILD_NUMBER}
     }
 
     post {
-        success {
-            echo "MealBox Order Service pipeline SUCCESS"
-        }
-        failure {
-            echo "MealBox Order Service pipeline FAILED"
-        }
         always {
             cleanWs()
+        }
+        success {
+            echo "CI pipeline SUCCESS with security scan"
+        }
+        failure {
+            echo "CI pipeline FAILED"
         }
     }
 }

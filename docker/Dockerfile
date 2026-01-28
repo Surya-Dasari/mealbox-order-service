@@ -1,17 +1,28 @@
 FROM registry.access.redhat.com/ubi9/openjdk-17-runtime
 
-LABEL app="mealbox-order-service" runtime="java17"
+# -------- Build arguments --------
+ARG NEXUS_URL
+ARG NEXUS_REPO
+ARG NEXUS_USER
+ARG NEXUS_PASS
+ARG GROUP_PATH=com/mealbox
+ARG ARTIFACT_ID=order-service
+ARG VERSION=0.0.1-SNAPSHOT
 
+# -------- Runtime config --------
 WORKDIR /app
-RUN mkdir -p /app && chmod -R g+rwX /app
+USER 1001
 
-RUN set -eux; \
-    META_URL="http://host.docker.internal:8082/repository/mealbox-maven-snapshots/com/mealbox/order-service/0.0.1-SNAPSHOT/maven-metadata.xml"; \
-    SNAPSHOT=$(curl -fsSL ${META_URL} | grep '<value>' | tail -n 1 | sed -E 's/.*>(.*)<.*/\1/'); \
-    curl -fsSL \
-      "http://host.docker.internal:8082/repository/mealbox-maven-snapshots/com/mealbox/order-service/0.0.1-SNAPSHOT/order-service-${SNAPSHOT}.jar" \
-      -o app.jar
+# -------- Download artifact from Nexus --------
+RUN curl -u ${NEXUS_USER}:${NEXUS_PASS} \
+    ${NEXUS_URL}/repository/${NEXUS_REPO}/${GROUP_PATH}/${ARTIFACT_ID}/${VERSION}/maven-metadata.xml \
+    -o metadata.xml && \
+    BUILD_VERSION=$(grep -oPm1 "(?<=<value>)[^<]+" metadata.xml) && \
+    curl -u ${NEXUS_USER}:${NEXUS_PASS} \
+    ${NEXUS_URL}/repository/${NEXUS_REPO}/${GROUP_PATH}/${ARTIFACT_ID}/${VERSION}/${ARTIFACT_ID}-${BUILD_VERSION}.jar \
+    -o app.jar && \
+    rm -f metadata.xml
 
 EXPOSE 9104
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseContainerSupport"
-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["java","-jar","/app/app.jar"]
+
