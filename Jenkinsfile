@@ -114,31 +114,33 @@ docker push ${IMAGE_NAME}:${IMAGE_TAG}
             }
         }
 
-        stage('Deploy to OpenShift Sandbox') {
-            when { branch 'develop' }
-            steps {
-                withCredentials([
-                    string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')
-                ]) {
-                    sh '''
+stage('Deploy to OpenShift Sandbox') {
+    when { branch 'develop' }
+    steps {
+        withCredentials([
+            string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')
+        ]) {
+            sh '''
 set -e
 
+# Login (absolute path required on Jenkins+WSL)
 /usr/bin/oc login ${OC_API} \
   --token=${OC_TOKEN} \
   --insecure-skip-tls-verify=true
 
+# Sandbox: use existing project only
 /usr/bin/oc project $(/usr/bin/oc projects -q | head -1)
 
+# Deploy with dynamic image tag
 sed "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g" \
   platform/openshift/order-service/deployment.yaml | /usr/bin/oc apply -f -
 
 /usr/bin/oc apply -f platform/openshift/order-service/service.yaml
 /usr/bin/oc apply -f platform/openshift/order-service/route.yaml
 '''
-                }
-            }
         }
     }
+}
 
     post {
         success {
