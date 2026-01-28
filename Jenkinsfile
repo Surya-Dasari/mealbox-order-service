@@ -151,7 +151,7 @@ rm -rf mealbox-platform || true
 git clone https://github.com/Surya-Dasari/mealbox-platform.git
 
 echo "Running Helm dry-run for order-service..."
-helm template order-service \
+/usr/local/bin/helm template order-service \
   mealbox-platform/helm/mealbox-backend-service \
   -f mealbox-platform/helm/mealbox-backend-service/values/values-order-service.yaml
 '''
