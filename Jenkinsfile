@@ -120,13 +120,11 @@ docker push ${IMAGE_NAME}:${IMAGE_TAG}
                 withCredentials([
                     string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')
                 ]) {
-                    sh '''
-set -e
-
-# Login to OpenShift
-oc login ${OC_API} \
-  --token=${OC_TOKEN} \
+sh '''
+/usr/bin/oc login https://api.sandbox-m2.ll9k.p1.openshiftapps.com \
+  --token=$OC_TOKEN \
   --insecure-skip-tls-verify=true
+'''
 
 # Sandbox allows only existing project
 oc project $(oc projects -q | head -1)
