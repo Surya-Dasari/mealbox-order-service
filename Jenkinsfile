@@ -142,6 +142,23 @@ sed "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g" \
         }
     }
 
+stage('Helm Template (Dry Run)') {
+    when { branch 'develop' }
+    steps {
+        sh '''
+set -e
+
+echo "Cloning MealBox platform repo (Helm charts)..."
+rm -rf mealbox-platform || true
+git clone https://github.com/Surya-Dasari/mealbox-platform.git
+
+echo "Running Helm dry-run for order-service..."
+helm template order-service \
+  mealbox-platform/helm/mealbox-backend-service \
+  -f mealbox-platform/helm/mealbox-backend-service/values/values-order-service.yaml
+'''
+    }
+}
     post {
         success {
             echo "MealBox Order Service: CI + Deploy SUCCESS"
