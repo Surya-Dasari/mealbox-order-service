@@ -114,33 +114,31 @@ docker push ${IMAGE_NAME}:${IMAGE_TAG}
             }
         }
 
-stage('Deploy to OpenShift Sandbox') {
-    when { branch 'develop' }
-    steps {
-        withCredentials([
-            string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')
-        ]) {
-            sh '''
+        stage('Deploy to OpenShift Sandbox') {
+            when { branch 'develop' }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')
+                ]) {
+                    sh '''
 set -e
 
-# Login to OpenShift (absolute path is REQUIRED for Jenkins on WSL)
 /usr/bin/oc login ${OC_API} \
   --token=${OC_TOKEN} \
   --insecure-skip-tls-verify=true
 
-# Sandbox allows only existing project
 /usr/bin/oc project $(/usr/bin/oc projects -q | head -1)
 
-# Inject image dynamically and deploy
 sed "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g" \
   platform/openshift/order-service/deployment.yaml | /usr/bin/oc apply -f -
 
 /usr/bin/oc apply -f platform/openshift/order-service/service.yaml
 /usr/bin/oc apply -f platform/openshift/order-service/route.yaml
 '''
+                }
+            }
         }
     }
-}
 
     post {
         success {
