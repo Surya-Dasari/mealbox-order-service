@@ -115,49 +115,39 @@ docker push ${IMAGE_NAME}:${IMAGE_TAG}
             }
         }
 
-        stage('Deploy to OpenShift Sandbox') {
-            when { branch 'develop' }
-            steps {
-                withCredentials([
-                    string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')
-                ]) {
-                    sh '''
-set -e
-
-oc login ${OC_API} \
-  --token=${OC_TOKEN} \
-  --insecure-skip-tls-verify=true
-
-oc project ${OC_PROJECT}
-
-sed "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g" \
-  platform/openshift/deployment.yaml | oc apply -f -
-
-oc apply -f platform/openshift/service.yaml
-oc apply -f platform/openshift/route.yaml
-'''
-                }
-            }
-        }
-
-        stage('Helm Template (Dry Run)') {
-            when { branch 'develop' }
-            steps {
-                sh '''
+       stage('Deploy to OpenShift (Helm)') {
+    when { branch 'develop' }
+    steps {
+        withCredentials([
+            string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')
+        ]) {
+            sh '''
 set -e
 
 echo "Cloning MealBox platform repo (Helm charts)..."
 rm -rf mealbox-platform || true
 git clone https://github.com/Surya-Dasari/mealbox-platform.git
 
-echo "Running Helm dry-run for order-service..."
-/usr/local/bin/helm template order-service \
+echo "Logging into OpenShift..."
+/usr/bin/oc login ${OC_API} \
+  --token=${OC_TOKEN} \
+  --insecure-skip-tls-verify=true
+
+/usr/bin/oc project ${OC_PROJECT}
+
+echo "Deploying order-service using Helm..."
+/usr/local/bin/helm upgrade --install order-service \
   mealbox-platform/helm/mealbox-backend-service \
-  -f mealbox-platform/helm/mealbox-backend-service/values/values-order-service.yaml
+  -f mealbox-platform/helm/mealbox-backend-service/values/values-order-service.yaml \
+  --set image.repository=${IMAGE_NAME} \
+  --set image.tag=${IMAGE_TAG}
+
+echo "Helm deployment finished"
 '''
-            }
         }
     }
+}
+
 
     post {
         success {
