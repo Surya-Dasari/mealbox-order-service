@@ -1,12 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        SERVICE_NAME = "order-service"
-        MAVEN_OPTS   = "-Dmaven.test.skip=false"
-        NEXUS_REPO  = "mealbox-maven-snapshots"
-    }
-
     stages {
 
         stage('Checkout') {
@@ -15,29 +9,27 @@ pipeline {
             }
         }
 
-        stage('Build & Unit Tests') {
+        stage('Build & Test') {
             steps {
-                sh '''
-                  mvn clean test package
-                '''
+                sh 'mvn clean test package'
             }
         }
 
-stage('Publish SNAPSHOT') {
-    when {
-        branch 'develop'
-    }
-    steps {
-        withVault([
-            vaultSecrets: [[
-                path: 'secret/mealbox/ci',
-                secretValues: [
-                    [envVar: 'NEXUS_USER', vaultKey: 'nexus_username'],
-                    [envVar: 'NEXUS_PASS', vaultKey: 'nexus_password']
-                ]
-            ]]
-        ]) {
-            sh '''
+        stage('Publish SNAPSHOT') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                withVault([
+                    vaultSecrets: [[
+                        path: 'secret/mealbox/ci',
+                        secretValues: [
+                            [envVar: 'NEXUS_USER', vaultKey: 'nexus_username'],
+                            [envVar: 'NEXUS_PASS', vaultKey: 'nexus_password']
+                        ]
+                    ]]
+                ]) {
+                    sh '''
 cat > settings.xml <<EOF
 <settings>
   <servers>
@@ -57,29 +49,21 @@ EOF
 
 mvn deploy -DskipTests -s settings.xml
 '''
+                }
+            }
         }
-    }
-}
 
         stage('Docker Build') {
             when {
                 branch 'develop'
             }
             steps {
-                sh '''
-                  docker build -t mealbox/order-service:${BUILD_NUMBER} .
-                '''
+                sh 'docker build -t mealbox/order-service:${BUILD_NUMBER} .'
             }
         }
     }
 
     post {
-        success {
-            echo "Order Service pipeline SUCCESS"
-        }
-        failure {
-            echo "Order Service pipeline FAILED"
-        }
         always {
             cleanWs()
         }
