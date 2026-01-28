@@ -9,6 +9,7 @@ pipeline {
         NEXUS_REPO = "mealbox-maven-snapshots"
 
         OC_API     = "https://api.rm2.thpm.p1.openshiftapps.com:6443"
+        OC_PROJECT = "suryadasari31-dev"
     }
 
     stages {
@@ -127,13 +128,14 @@ set -e
   --token=${OC_TOKEN} \
   --insecure-skip-tls-verify=true
 
-/usr/bin/oc project $(/usr/bin/oc projects -q | head -1)
+/usr/bin/oc project ${OC_PROJECT}
 
 sed "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g" \
   platform/openshift/deployment.yaml | /usr/bin/oc apply -f -
 
 /usr/bin/oc apply -f platform/openshift/service.yaml
 /usr/bin/oc apply -f platform/openshift/route.yaml
+
 '''
                 }
             }
